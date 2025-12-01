@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "400297971432",
+    "project_id": "egypt-fault-map",
+    "storage_bucket": "egypt-fault-map.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:400297971432:android:ddd5ff15e64b19c7af035d",
+        "android_client_info": {
+          "package_name": "com.example.egypt_fault_map"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBuxh289tBdxTPeBL9R-3XZ3BcKvzl7Ql8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
