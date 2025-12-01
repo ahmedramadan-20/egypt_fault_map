@@ -1,9 +1,8 @@
-feat: implement onboarding flow and core routing setup
+feat: Implement Onboarding and Login screens
 
-- Added `OnboardingScreen` with UI, images, and persistence logic.
-- Created basic `LoginScreen` and `SignupScreen`.
-- Configured `AppRouter` and `Routes` for navigation.
-- Implemented `CacheHelper` for `SharedPreferences` management.
-- Updated `main.dart` to handle initial route based on onboarding status.
-- Added dependencies: `shared_preferences`, `flutter_screenutil`, `get_it`.
-- Updated `widget_test.dart` to support new app constructor.
+- Implemented Onboarding logic using `shared_preferences` and `get_it`.
+- Added `OnboardingScreen` with "Skip" and "Get Started" functionality.
+- Implemented `LoginScreen` with a premium blurred map background design.
+- Added "Continue as Guest" and "Login" navigation to Home.
+- Adjusted app logo size on Login screen.
+- Updated `AppRouter` and `main.dart` to handle initial routing based on onboarding status.

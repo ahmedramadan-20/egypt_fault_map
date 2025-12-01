@@ -1,72 +1,25 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CacheHelper {
-  static late SharedPreferences sharedPreferences;
+  final SharedPreferences prefs;
 
-  //! Here The Initialize of cache .
-  static init() async {
-    sharedPreferences = await SharedPreferences.getInstance();
+  CacheHelper(this.prefs);
+
+  String? getString(String key) => prefs.getString(key);
+
+  Future<bool> saveData({required String key, required dynamic value}) async {
+    if (value is bool) return await prefs.setBool(key, value);
+    if (value is String) return await prefs.setString(key, value);
+    if (value is int) return await prefs.setInt(key, value);
+    if (value is double) return await prefs.setDouble(key, value);
+    return false;
   }
 
-  //! this method to put data in local database using key
+  dynamic getData(String key) => prefs.get(key);
 
-  static String? getDataString({required String key}) {
-    return sharedPreferences.getString(key);
-  }
+  Future<bool> remove(String key) async => prefs.remove(key);
 
-  //! this method to put data in local database using key
+  bool containsKey(String key) => prefs.containsKey(key);
 
-  static Future<bool> saveData({
-    required String key,
-    required dynamic value,
-  }) async {
-    if (value is bool) {
-      return await sharedPreferences.setBool(key, value);
-    }
-    if (value is String) {
-      return await sharedPreferences.setString(key, value);
-    }
-
-    if (value is int) {
-      return await sharedPreferences.setInt(key, value);
-    } else {
-      return await sharedPreferences.setDouble(key, value);
-    }
-  }
-
-  //! this method to get data already saved in local database
-
-  static dynamic getData({required String key}) {
-    return sharedPreferences.get(key);
-  }
-
-  //! remove data using specific key
-
-  static Future<bool> removeData({required String key}) async {
-    return await sharedPreferences.remove(key);
-  }
-
-  //! this method to check if local database contains {key}
-  static Future<bool> containsKey({required String key}) async {
-    return sharedPreferences.containsKey(key);
-  }
-
-  //! clear all data in the local database
-  static Future<bool> clearData() async {
-    return await sharedPreferences.clear();
-  }
-
-  //! this method to put data in local database using key
-  static Future<dynamic> put({
-    required String key,
-    required dynamic value,
-  }) async {
-    if (value is String) {
-      return await sharedPreferences.setString(key, value);
-    } else if (value is bool) {
-      return await sharedPreferences.setBool(key, value);
-    } else {
-      return await sharedPreferences.setInt(key, value);
-    }
-  }
+  Future<bool> clear() async => prefs.clear();
 }

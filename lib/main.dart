@@ -11,13 +11,18 @@ import 'firebase_options.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  setupGetIt();
+
+  await setupGetIt();
   await ScreenUtil.ensureScreenSize();
-  await CacheHelper.init();
+
+  final cache = getIt<CacheHelper>();
 
   String initialRoute = Routes.onBoardingScreen;
-  bool? onBoarding = CacheHelper.getData(key: 'onBoarding');
-  initialRoute = Routes.loginScreen;
+  bool? onBoarding = cache.getData('onBoarding');
+
+  if (onBoarding != null && onBoarding) {
+    initialRoute = Routes.loginScreen;
+  }
 
   runApp(EgyptFaultMap(appRouter: AppRouter(), initialRoute: initialRoute));
 }
