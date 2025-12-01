@@ -1,7 +1,10 @@
+import 'package:egypt_fault_map/core/di/dependency_injection.dart';
 import 'package:egypt_fault_map/core/helpers/shared_preferences_helper.dart';
 import 'package:egypt_fault_map/core/routing/routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+
+import '../data/models/onboarding_model.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -68,17 +71,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     return Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Image.asset(
-                          _pages[index].image,
-                          height: 300.h,
-                          fit: BoxFit.contain,
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(10.r),
+                          child: Image.asset(
+                            _pages[index].image,
+                            //width: 300.w,
+                            fit: BoxFit.contain,
+                          ),
                         ),
                         SizedBox(height: 30.h),
                         Text(
                           _pages[index].title,
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontSize: 24.sp,
+                            fontSize: 20.sp,
                             fontWeight: FontWeight.bold,
                             color: Colors.black,
                           ),
@@ -88,7 +94,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           _pages[index].subtitle,
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontSize: 16.sp,
+                            fontSize: 12.sp,
                             color: Colors.grey[600],
                           ),
                         ),
@@ -121,7 +127,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 child: ElevatedButton(
                   onPressed: () {
                     if (_currentPage == _pages.length - 1) {
-                      // _finishOnboarding(context);
+                      _finishOnboarding(context);
                     } else {
                       _pageController.nextPage(
                         duration: const Duration(milliseconds: 300),
@@ -149,19 +155,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   void _finishOnboarding(BuildContext context) {
-    CacheHelper.saveData(key: 'onBoarding', value: true);
+    getIt<CacheHelper>().saveData(key: 'onBoarding', value: true);
     Navigator.pushReplacementNamed(context, Routes.loginScreen);
   }
-}
-
-class OnboardingModel {
-  final String image;
-  final String title;
-  final String subtitle;
-
-  OnboardingModel({
-    required this.image,
-    required this.title,
-    required this.subtitle,
-  });
 }
