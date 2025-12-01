@@ -114,6 +114,7 @@ lib
 ```bash
 git clone https://github.com/your-username/egypt-fault-map.git
 cd egypt-fault-map
+```
 3. Add Firebase
 
 Add your google-services.json (Android)
