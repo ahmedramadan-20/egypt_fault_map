@@ -57,6 +57,9 @@ class LoginScreen extends StatelessWidget {
 
                             // Email Field
                             TextField(
+                              onTapOutside: (event) {
+                                FocusScope.of(context).unfocus();
+                              },
                               decoration: InputDecoration(
                                 hintText: 'Email',
                                 prefixIcon: const Icon(Icons.email_outlined),
