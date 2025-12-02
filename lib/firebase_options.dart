@@ -77,5 +77,4 @@ class DefaultFirebaseOptions {
     authDomain: 'egypt-fault-map.firebaseapp.com',
     storageBucket: 'egypt-fault-map.firebasestorage.app',
   );
-
 }

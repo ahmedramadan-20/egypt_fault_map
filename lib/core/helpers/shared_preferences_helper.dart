@@ -17,9 +17,9 @@ class CacheHelper {
 
   dynamic getData(String key) => prefs.get(key);
 
-  Future<bool> remove(String key) async => prefs.remove(key);
+  Future<bool> remove(String key) => prefs.remove(key);
 
   bool containsKey(String key) => prefs.containsKey(key);
 
-  Future<bool> clear() async => prefs.clear();
+  Future<bool> clear() => prefs.clear();
 }
