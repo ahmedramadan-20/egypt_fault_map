@@ -19,9 +19,14 @@ void main() async {
 
   String initialRoute = Routes.onBoardingScreen;
   bool? onBoarding = cache.getData('onBoarding');
+  String? uid = cache.getData('uid');
 
   if (onBoarding != null && onBoarding) {
-    initialRoute = Routes.loginScreen;
+    if (uid != null && uid.isNotEmpty) {
+      initialRoute = Routes.homeScreen;
+    } else {
+      initialRoute = Routes.loginScreen;
+    }
   }
 
   runApp(EgyptFaultMap(appRouter: AppRouter(), initialRoute: initialRoute));

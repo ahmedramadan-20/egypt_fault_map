@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-
+import 'features/home/logic/location/location_cubit.dart';
 import 'core/routing/app_router.dart';
 
 class EgyptFaultMap extends StatelessWidget {
@@ -16,14 +16,17 @@ class EgyptFaultMap extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ScreenUtilInit(
-      designSize: const Size(375, 812),
-      minTextAdapt: true,
-      child: MaterialApp(
-        title: 'Egypt Fault Map',
-        debugShowCheckedModeBanner: false,
-        initialRoute: initialRoute,
-        onGenerateRoute: appRouter.generateRoute,
+    return BlocProvider(
+      create: (context) => LocationCubit()..getLocation(),
+      child: ScreenUtilInit(
+        designSize: const Size(375, 812),
+        minTextAdapt: true,
+        child: MaterialApp(
+          title: 'Egypt Fault Map',
+          debugShowCheckedModeBanner: false,
+          initialRoute: initialRoute,
+          onGenerateRoute: appRouter.generateRoute,
+        ),
       ),
     );
   }
