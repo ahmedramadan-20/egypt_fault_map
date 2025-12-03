@@ -1,15 +1,20 @@
+import 'package:egypt_fault_map/core/helpers/extensions.dart';
 import 'package:egypt_fault_map/features/home/data/repos/fault_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import '../../../../core/constants/app_strings.dart';
 import '../../../../core/di/dependency_injection.dart';
 import '../../../../core/routing/routes.dart';
-import '../data/models/fault_model.dart';
+import '../../../../core/theming/app_colors.dart';
+import '../../../../core/widgets/empty_state.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
 import '../logic/home_cubit.dart';
 import '../logic/location/location_cubit.dart';
 import '../logic/location/location_state.dart';
+import 'widgets/fault_card.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -17,8 +22,11 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => HomeCubit(getIt<FaultRepository>()),
-      child: const _HomeScreenContent(),
+      create: (context) => LocationCubit()..getLocation(),
+      child: BlocProvider(
+        create: (context) => HomeCubit(getIt<IFaultRepository>()),
+        child: const _HomeScreenContent(),
+      ),
     );
   }
 }
@@ -34,11 +42,29 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
   GoogleMapController? _mapController;
   LatLng _initialPosition = const LatLng(30.0444, 31.2357); // Cairo default
   bool _isMapView = false; // Toggle between list and map
+  bool _isRealTimeEnabled = true; // Enable real-time updates by default
 
   @override
   void initState() {
     super.initState();
     _loadFaults();
+    _setupLocationListener();
+  }
+
+  void _setupLocationListener() {
+    // Listen to location changes and update HomeCubit
+    context.read<LocationCubit>().stream.listen((locationState) {
+      if (locationState is LocationSuccess && mounted) {
+        setState(() {
+          _initialPosition = LatLng(
+            locationState.position.latitude,
+            locationState.position.longitude,
+          );
+        });
+        // Update HomeCubit with new position for distance recalculation
+        context.read<HomeCubit>().updateUserPosition(locationState.position);
+      }
+    });
   }
 
   void _loadFaults() {
@@ -51,7 +77,53 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
         locationState.position.longitude,
       );
     }
-    context.read<HomeCubit>().loadFaults(userPosition: userPosition);
+    _loadFaultsWithPosition(userPosition);
+  }
+
+  void _loadFaultsWithPosition(Position? userPosition) {
+    // Use real-time updates if enabled, otherwise one-time load
+    if (_isRealTimeEnabled) {
+      context.read<HomeCubit>().enableRealTimeUpdates(
+        userPosition: userPosition,
+        limit: 100,
+      );
+    } else {
+      context.read<HomeCubit>().loadFaults(userPosition: userPosition);
+    }
+  }
+
+  void _toggleRealTimeUpdates() {
+    setState(() {
+      _isRealTimeEnabled = !_isRealTimeEnabled;
+    });
+
+    if (_isRealTimeEnabled) {
+      // Enable real-time
+      final locationState = context.read<LocationCubit>().state;
+      Position? userPosition;
+      if (locationState is LocationSuccess) {
+        userPosition = locationState.position;
+      }
+      context.read<HomeCubit>().enableRealTimeUpdates(
+        userPosition: userPosition,
+        limit: 100,
+      );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Real-time updates enabled'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } else {
+      // Disable real-time
+      context.read<HomeCubit>().disableRealTimeUpdates();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Real-time updates disabled'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   @override
@@ -64,8 +136,36 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Egypt Fault Map"),
+        // Profile button on the left
+        leading: IconButton(
+          icon: const Icon(Icons.person),
+          onPressed: () {
+            context.pushNamed(Routes.profileScreen);
+          },
+          tooltip: "Profile",
+        ),
+        title: const Text(AppStrings.appName),
         actions: [
+          // Notifications button
+          IconButton(
+            icon: const Icon(Icons.notifications),
+            onPressed: () {
+              context.pushNamed(Routes.notificationsScreen);
+            },
+            tooltip: "Notifications",
+          ),
+          // Real-time updates toggle
+          IconButton(
+            icon: Icon(
+              _isRealTimeEnabled ? Icons.sync : Icons.sync_disabled,
+              color: _isRealTimeEnabled ? Colors.green : null,
+            ),
+            onPressed: _toggleRealTimeUpdates,
+            tooltip: _isRealTimeEnabled
+                ? "Real-time updates enabled"
+                : "Real-time updates disabled",
+          ),
+          // Map/List view toggle
           IconButton(
             icon: Icon(_isMapView ? Icons.list : Icons.map),
             onPressed: () {
@@ -77,24 +177,51 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
           ),
         ],
       ),
-      body: BlocBuilder<HomeCubit, HomeState>(
-        builder: (context, state) {
-          if (state is HomeLoading) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (state is HomeError) {
-            return Center(child: Text("Error: ${state.message}"));
-          } else if (state is HomeLoaded) {
-            if (state.faults.isEmpty) {
-              return _buildEmptyState();
+      body: BlocListener<LocationCubit, LocationState>(
+        listener: (context, state) {
+          if (state is LocationSuccess) {
+            // Only update position if faults are already loaded, don't reload
+            final homeCubit = context.read<HomeCubit>();
+            if (homeCubit.state is HomeLoaded) {
+              homeCubit.updateUserPosition(state.position);
+            } else {
+              // Only load faults if not already loaded
+              _loadFaults();
             }
-            return _isMapView ? _buildMapView(state) : _buildListView(state);
           }
-          return const SizedBox.shrink();
         },
+        child: BlocBuilder<HomeCubit, HomeState>(
+          builder: (context, state) {
+            if (state is HomeLoading) {
+              return _buildLoadingSkeleton();
+            } else if (state is HomeError) {
+              return Center(
+                child: Text("${AppStrings.errorPrefix}${state.message}"),
+              );
+            } else if (state is HomeLoaded) {
+              if (state.faultsWithDistance.isEmpty) {
+                return _buildEmptyState();
+              }
+              return _isMapView
+                  ? _buildMapView(state)
+                  : _isRealTimeEnabled
+                  ? _buildListView(
+                      state,
+                    ) // No pull-to-refresh when real-time is on
+                  : RefreshIndicator(
+                      onRefresh: () async {
+                        _loadFaults();
+                      },
+                      child: _buildListView(state),
+                    );
+            }
+            return const SizedBox.shrink();
+          },
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Navigator.pushNamed(context, Routes.addFaultScreen).then((_) {
+          context.pushNamed(Routes.addFaultScreen).then((_) {
             _loadFaults();
           });
         },
@@ -104,43 +231,166 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.location_off, size: 80.sp, color: Colors.grey),
-          SizedBox(height: 16.h),
-          Text(
-            "No Faults Reported Yet",
-            style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.bold),
-          ),
-          SizedBox(height: 8.h),
-          Text(
-            "Tap + to report a fault",
-            style: TextStyle(fontSize: 14.sp, color: Colors.grey),
-          ),
-        ],
-      ),
+    return EmptyState(
+      icon: Icons.report_problem_outlined,
+      title: 'No Faults Reported Yet',
+      message:
+          'Be the first to report a fault in your area and help improve the community.',
+      actionLabel: 'Report First Fault',
+      onActionPressed: () {
+        context.pushNamed(Routes.addFaultScreen).then((_) {
+          _loadFaults();
+        });
+      },
+    );
+  }
+
+  Widget _buildLoadingSkeleton() {
+    return ListView.builder(
+      padding: EdgeInsets.all(16.w),
+      itemCount: 5,
+      itemBuilder: (context, index) => const FaultCardSkeleton(),
     );
   }
 
   Widget _buildListView(HomeLoaded state) {
-    return ListView.builder(
-      padding: EdgeInsets.all(16.w),
-      itemCount: state.faults.length,
-      itemBuilder: (context, index) {
-        final fault = state.faults[index];
-        double? distance;
-        if (state.userPosition != null) {
-          distance = Geolocator.distanceBetween(
-            state.userPosition!.latitude,
-            state.userPosition!.longitude,
-            fault.location.lat,
-            fault.location.lng,
-          );
-        }
-        return _FaultCard(fault: fault, distance: distance);
-      },
+    return Column(
+      children: [
+        // Location permission banner
+        BlocBuilder<LocationCubit, LocationState>(
+          builder: (context, locationState) {
+            if (locationState is LocationPermissionDenied ||
+                locationState is LocationError) {
+              return Container(
+                width: double.infinity,
+                padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 16.w),
+                decoration: BoxDecoration(
+                  color: AppColors.warningLight.withOpacity(0.2),
+                  border: Border(
+                    bottom: BorderSide(
+                      color: AppColors.warning.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.location_off,
+                      size: 20.sp,
+                      color: AppColors.warning,
+                    ),
+                    SizedBox(width: 12.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Location access needed',
+                            style: TextStyle(
+                              fontSize: 13.sp,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          Text(
+                            'Enable location to see distances',
+                            style: TextStyle(
+                              fontSize: 11.sp,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        context.read<LocationCubit>().getLocation();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.warning,
+                        foregroundColor: AppColors.white,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 12.w,
+                          vertical: 8.h,
+                        ),
+                        elevation: 0,
+                      ),
+                      child: Text(
+                        'Enable',
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          color: AppColors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+            return const SizedBox.shrink();
+          },
+        ),
+        // Real-time indicator banner
+        if (_isRealTimeEnabled)
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(vertical: 8.h, horizontal: 16.w),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.success.withOpacity(0.1),
+                  AppColors.successLight.withOpacity(0.1),
+                ],
+              ),
+              border: Border(
+                bottom: BorderSide(
+                  color: AppColors.success.withOpacity(0.2),
+                  width: 1,
+                ),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 8.sp,
+                  height: 8.sp,
+                  decoration: BoxDecoration(
+                    color: AppColors.success,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.success.withOpacity(0.5),
+                        blurRadius: 4,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(width: 8.w),
+                Text(
+                  'Live updates active',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    color: AppColors.success,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        Expanded(
+          child: ListView.builder(
+            padding: EdgeInsets.all(16.w),
+            itemCount: state.faultsWithDistance.length,
+            itemBuilder: (context, index) {
+              final item = state.faultsWithDistance[index];
+              return FaultCard(fault: item.fault, distance: item.distance);
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -157,121 +407,6 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
         markers: state.markers,
         myLocationEnabled: true,
         myLocationButtonEnabled: true,
-      ),
-    );
-  }
-}
-
-class _FaultCard extends StatelessWidget {
-  final FaultModel fault;
-  final double? distance;
-
-  const _FaultCard({required this.fault, this.distance});
-
-  String _getDistanceText() {
-    if (distance == null) return "";
-    if (distance! < 1000) {
-      return "${distance!.toStringAsFixed(0)} m away";
-    }
-    return "${(distance! / 1000).toStringAsFixed(1)} km away";
-  }
-
-  Color _getStatusColor() {
-    switch (fault.status.toLowerCase()) {
-      case 'pending':
-        return Colors.orange;
-      case 'in-progress':
-        return Colors.blue;
-      case 'done':
-        return Colors.green;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: EdgeInsets.only(bottom: 12.h),
-      child: ListTile(
-        contentPadding: EdgeInsets.all(12.w),
-        leading: fault.imageUrl.isNotEmpty
-            ? ClipRRect(
-                borderRadius: BorderRadius.circular(8.r),
-                child: Image.network(
-                  fault.imageUrl,
-                  width: 60.w,
-                  height: 60.h,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) =>
-                      Icon(Icons.broken_image, size: 60.sp, color: Colors.grey),
-                ),
-              )
-            : Container(
-                width: 60.w,
-                height: 60.h,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(8.r),
-                ),
-                child: Icon(
-                  Icons.location_on,
-                  size: 30.sp,
-                  color: Colors.grey[600],
-                ),
-              ),
-        title: Text(
-          fault.type.toUpperCase(),
-          style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(height: 4.h),
-            Text(
-              fault.description,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 14.sp),
-            ),
-            SizedBox(height: 4.h),
-            Row(
-              children: [
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
-                  decoration: BoxDecoration(
-                    color: _getStatusColor(),
-                    borderRadius: BorderRadius.circular(4.r),
-                  ),
-                  child: Text(
-                    fault.status.toUpperCase(),
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 10.sp,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                if (distance != null) ...[
-                  SizedBox(width: 8.w),
-                  Icon(Icons.location_on, size: 14.sp, color: Colors.grey),
-                  SizedBox(width: 2.w),
-                  Text(
-                    _getDistanceText(),
-                    style: TextStyle(fontSize: 12.sp, color: Colors.grey),
-                  ),
-                ],
-              ],
-            ),
-          ],
-        ),
-        onTap: () {
-          Navigator.pushNamed(
-            context,
-            Routes.faultDetailsScreen,
-            arguments: {'fault': fault, 'distance': distance},
-          );
-        },
       ),
     );
   }

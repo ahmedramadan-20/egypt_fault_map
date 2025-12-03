@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:egypt_fault_map/core/helpers/extensions.dart';
 import 'package:egypt_fault_map/core/routing/routes.dart';
 import 'package:egypt_fault_map/features/auth/logic/login/login_cubit.dart';
 import 'package:egypt_fault_map/features/auth/logic/login/login_state.dart';
@@ -8,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../core/di/dependency_injection.dart';
+import '../../../core/theming/app_colors.dart';
 import '../../../core/widgets/text_field.dart';
 import '../data/repos/auth_repository.dart';
 
@@ -48,7 +50,16 @@ class _LoginScreenState extends State<LoginScreen> {
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
                 child: Container(
-                  color: Colors.black.withValues(alpha: 0.4), // Dark overlay
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.primary.withOpacity(0.6),
+                        Colors.black.withOpacity(0.5),
+                      ],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -65,17 +76,15 @@ class _LoginScreenState extends State<LoginScreen> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(24.r),
                         ),
-                        elevation: 8,
-                        color: Colors.white,
+                        elevation: 12,
+                        shadowColor: AppColors.primary.withOpacity(0.3),
+                        color: AppColors.surface,
                         child: Padding(
                           padding: EdgeInsets.all(24.w),
                           child: BlocConsumer<LoginCubit, LoginState>(
                             listener: (context, state) {
                               if (state is LoginSuccessState) {
-                                Navigator.pushReplacementNamed(
-                                  context,
-                                  Routes.homeScreen,
-                                );
+                                context.pushReplacementNamed(Routes.homeScreen);
                               } else if (state is LoginFailureState) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(content: Text(state.message)),
@@ -146,7 +155,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                                 }
                                               },
                                         style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.blue,
+                                          backgroundColor: AppColors.primary,
+                                          foregroundColor: AppColors.white,
+                                          elevation: 3,
+                                          shadowColor: AppColors.primary
+                                              .withOpacity(0.4),
                                           shape: RoundedRectangleBorder(
                                             borderRadius: BorderRadius.circular(
                                               12.r,
@@ -161,8 +174,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                                 'Login',
                                                 style: TextStyle(
                                                   fontSize: 16.sp,
-                                                  color: Colors.white,
+                                                  color: AppColors.white,
                                                   fontWeight: FontWeight.bold,
+                                                  letterSpacing: 0.5,
                                                 ),
                                               ),
                                       ),
@@ -172,16 +186,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                     // Create Account
                                     TextButton(
                                       onPressed: () {
-                                        Navigator.pushNamed(
-                                          context,
-                                          Routes.signupScreen,
-                                        );
+                                        context.pushNamed(Routes.signupScreen);
                                       },
                                       child: Text(
                                         'Create Account',
                                         style: TextStyle(
                                           fontSize: 14.sp,
-                                          color: Colors.blue,
+                                          color: AppColors.primary,
+                                          fontWeight: FontWeight.w600,
                                         ),
                                       ),
                                     ),
@@ -189,8 +201,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     // Continue as Guest
                                     TextButton(
                                       onPressed: () {
-                                        Navigator.pushReplacementNamed(
-                                          context,
+                                        context.pushReplacementNamed(
                                           Routes.homeScreen,
                                         );
                                       },
@@ -198,7 +209,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                         'Continue as Guest',
                                         style: TextStyle(
                                           fontSize: 14.sp,
-                                          color: Colors.grey[700],
+                                          color: AppColors.textSecondary,
+                                          fontWeight: FontWeight.w500,
                                         ),
                                       ),
                                     ),
@@ -224,7 +236,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 'Troubleshooting the country starts with you.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.8),
+                  color: Colors.white.withValues(alpha: 0.8),
                   fontSize: 14.sp,
                   fontWeight: FontWeight.w500,
                 ),

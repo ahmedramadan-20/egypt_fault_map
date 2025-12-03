@@ -3,9 +3,9 @@ import 'package:egypt_fault_map/core/di/dependency_injection.dart';
 import 'package:egypt_fault_map/core/helpers/shared_preferences_helper.dart';
 import 'package:egypt_fault_map/core/routing/app_router.dart';
 import 'package:egypt_fault_map/core/routing/routes.dart';
+import 'package:egypt_fault_map/core/services/notification_service.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -13,7 +13,9 @@ void main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   await setupGetIt();
-  await ScreenUtil.ensureScreenSize();
+  
+  // Initialize notification service
+  await getIt<NotificationService>().initialize();
 
   final cache = getIt<CacheHelper>();
 

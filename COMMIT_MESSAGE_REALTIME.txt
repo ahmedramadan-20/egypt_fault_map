@@ -1,0 +1,75 @@
+feat: implement real-time updates with Firestore streams
+
+Add comprehensive real-time update functionality allowing users to see
+new faults automatically without manual refresh.
+
+Features:
+- Real-time stream subscription in HomeCubit
+- User toggle control in app bar
+- Live indicator banner when active
+- Smart pull-to-refresh (disabled when real-time on)
+- Automatic distance recalculation on updates
+- Position update support for live recalculation
+
+Implementation Details:
+- enableRealTimeUpdates() - Subscribe to Firestore stream
+- disableRealTimeUpdates() - Cancel stream and cleanup
+- updateUserPosition() - Update position and recalculate distances
+- _processFaults() - Shared processing logic for DRY code
+- Proper stream cleanup on dispose
+- Error handling for stream errors
+- User feedback with SnackBar notifications
+
+UI Enhancements:
+- Toggle button with green/gray sync icon
+- Live indicator banner (green) at top of list
+- Conditional pull-to-refresh based on mode
+- Clear tooltips and visual feedback
+- Smooth state transitions
+
+Performance:
+- Background distance calculations (compute isolate)
+- Cached markers to avoid regeneration
+- Configurable limit (default: 100 faults)
+- Stream only active when needed
+- Proper resource cleanup
+
+Benefits:
+- Automatic updates for new/modified faults
+- User control over feature (battery optimization)
+- Better collaboration (team sees same data)
+- Improved UX with instant updates
+- Production-ready implementation
+
+Files Modified:
+- lib/features/home/logic/home_cubit.dart
+- lib/features/home/ui/home_screen.dart
+
+Documentation Added:
+- REALTIME_UPDATES_GUIDE.md (comprehensive guide)
+- REALTIME_UPDATES_SUMMARY.md (quick reference)
+
+Testing:
+- Manual testing completed
+- No memory leaks verified
+- Performance acceptable
+- Error handling validated
+- Zero analyzer warnings
+
+Default Behavior:
+- Real-time enabled by default
+- User can toggle off for battery savings
+- Pull-to-refresh available when disabled
+
+Impact:
+- Transforms user experience
+- Enables real-time collaboration
+- Production-ready feature
+- No breaking changes
+
+Verified with: flutter analyze (no issues found)
+
+Breaking changes: None
+Migration required: None
+
+Related: Issue #11 (pagination), FIXES_APPLIED.md

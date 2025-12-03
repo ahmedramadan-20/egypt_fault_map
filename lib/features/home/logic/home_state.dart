@@ -6,12 +6,19 @@ class HomeInitial extends HomeState {}
 
 class HomeLoading extends HomeState {}
 
+class FaultWithDistance {
+  final FaultModel fault;
+  final double? distance;
+  
+  const FaultWithDistance(this.fault, this.distance);
+}
+
 class HomeLoaded extends HomeState {
-  final List<FaultModel> faults;
+  final List<FaultWithDistance> faultsWithDistance;
   final Set<Marker> markers;
   final Position? userPosition;
 
-  HomeLoaded(this.faults, this.markers, this.userPosition);
+  HomeLoaded(this.faultsWithDistance, this.markers, this.userPosition);
 }
 
 class HomeError extends HomeState {

@@ -10,8 +10,7 @@ class FaultModel {
   final String createdBy;
   final Timestamp createdAt;
   final Timestamp updatedAt;
-  final String
-  severity; // Kept as requested in previous prompt, though not in JSON above, user said "and severity as well"
+  final String severity; // "Low" | "Medium" | "High"
 
   FaultModel({
     required this.id,

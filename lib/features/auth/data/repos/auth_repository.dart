@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:egypt_fault_map/features/auth/data/models/app_user.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../../../core/errors/exceptions.dart';
 import '../../../../core/helpers/shared_preferences_helper.dart';
 
 class AuthRepository {
@@ -41,10 +42,26 @@ class AuthRepository {
       await cacheHelper.saveData(key: "uid", value: appUser.uid);
 
       return appUser;
-    } on FirebaseAuthException {
-      rethrow;
-    } catch (e) {
-      throw Exception(e.toString());
+    } on FirebaseAuthException catch (e, stackTrace) {
+      throw AuthException(
+        message: e.message ?? 'Sign up failed',
+        code: e.code,
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    } on FirebaseException catch (e, stackTrace) {
+      throw DatabaseException(
+        message: 'Failed to create user profile: ${e.message}',
+        code: e.code,
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    } catch (e, stackTrace) {
+      throw DatabaseException(
+        message: 'Failed to create user profile: ${e.toString()}',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -67,7 +84,7 @@ class AuthRepository {
           .get();
 
       if (!doc.exists) {
-        throw Exception("User profile not found in database.");
+        throw DatabaseException.documentNotFound(userCred.user!.uid);
       }
 
       final appUser = AppUser.fromDoc(doc);
@@ -75,10 +92,28 @@ class AuthRepository {
       await cacheHelper.saveData(key: "uid", value: appUser.uid);
 
       return appUser;
-    } on FirebaseAuthException {
+    } on FirebaseAuthException catch (e, stackTrace) {
+      throw AuthException(
+        message: e.message ?? 'Login failed',
+        code: e.code,
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    } on DatabaseException {
       rethrow;
-    } catch (e) {
-      throw Exception(e.toString());
+    } on FirebaseException catch (e, stackTrace) {
+      throw DatabaseException(
+        message: 'Failed to load user profile: ${e.message}',
+        code: e.code,
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    } catch (e, stackTrace) {
+      throw DatabaseException(
+        message: 'Failed to load user profile: ${e.toString()}',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
     }
   }
 

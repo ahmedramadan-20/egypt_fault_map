@@ -1,5 +1,5 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/errors/exceptions.dart';
 import '../../data/repos/auth_repository.dart';
 import 'register_state.dart';
 
@@ -18,22 +18,21 @@ class RegisterCubit extends Cubit<RegisterState> {
 
       await _authRepo.signUp(email: email, password: password, name: name);
       emit(RegisterSuccess());
-    } on FirebaseAuthException catch (e) {
+    } on AuthException catch (e) {
+      // Handle specific auth error codes
+      String message = e.message;
       if (e.code == 'weak-password') {
-        emit(RegisterFailure(message: 'The password provided is too weak.'));
+        message = 'Password is too weak. Use at least 6 characters.';
       } else if (e.code == 'email-already-in-use') {
-        emit(
-          RegisterFailure(
-            message: 'The account already exists for that email.',
-          ),
-        );
+        message = 'This email is already registered. Please login instead.';
       } else if (e.code == 'invalid-email') {
-        emit(RegisterFailure(message: 'The email address is not valid.'));
-      } else {
-        emit(RegisterFailure(message: e.message ?? 'An error occurred.'));
+        message = 'Invalid email address format.';
       }
+      emit(RegisterFailure(message: message));
+    } on DatabaseException catch (e) {
+      emit(RegisterFailure(message: e.message));
     } catch (e) {
-      emit(RegisterFailure(message: e.toString()));
+      emit(RegisterFailure(message: 'Registration failed. Please try again.'));
     }
   }
 }

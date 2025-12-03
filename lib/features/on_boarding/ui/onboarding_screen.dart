@@ -1,6 +1,8 @@
 import 'package:egypt_fault_map/core/di/dependency_injection.dart';
+import 'package:egypt_fault_map/core/helpers/extensions.dart';
 import 'package:egypt_fault_map/core/helpers/shared_preferences_helper.dart';
 import 'package:egypt_fault_map/core/routing/routes.dart';
+import 'package:egypt_fault_map/core/theming/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -37,6 +39,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           'Follow your reports, check their status, and stay updated until the issue is fully fixed.',
     ),
   ];
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -113,8 +121,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     height: 8.h,
                     decoration: BoxDecoration(
                       color: _currentPage == index
-                          ? Colors.blue
-                          : Colors.grey[300],
+                          ? AppColors.primary
+                          : AppColors.grey300,
                       borderRadius: BorderRadius.circular(4.r),
                     ),
                   ),
@@ -136,7 +144,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     }
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.white,
+                    elevation: 3,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10.r),
                     ),
@@ -156,6 +166,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   void _finishOnboarding(BuildContext context) {
     getIt<CacheHelper>().saveData(key: 'onBoarding', value: true);
-    Navigator.pushReplacementNamed(context, Routes.loginScreen);
+    context.pushReplacementNamed(Routes.loginScreen);
   }
 }
